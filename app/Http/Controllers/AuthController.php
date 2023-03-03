@@ -2,68 +2,143 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Validator;
+use App\Models\User;
 
 class AuthController extends Controller
 {
+    /**
+     * Register a new user
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\Response
+     */
     public function register(Request $request)
     {
-        $fields = $request->validate([
-            'name' => 'required|string',
-            'email' => 'required|string|unique:users,email',
-            'password' => 'required|string|confirmed',
 
-        ]);
-        $user = User::create([
-            'name' => $fields['name'],
-            'email' => $fields['email'],
-            'password' => bcrypt($fields['password']),
-        ]);
-        $token = $user->createToken('mytoken')->plainTextToken;
-        $response = [
-            'user' => $user,
-            'token' => $token
-        ];
-        return response($response, 201);
+//        $this->authorize('create', User::class);
+        if ( $request->role =='admin' || $request->role =='manager' ) {
+            if ( auth()->user()->role != 'admin'){
+                dd('Your access denied');
+            }
+
+        }
+        $validatedData = Validator::make($request->all(), [
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email',
+            'password' => 'required|string|min:8',
+            'role' => 'required|string|in:admin,manager,employee',
+            'manager_id' => 'nullable|integer|exists:users,id',
+            'birthdate' => 'nullable|date',
+            'salary' => 'nullable|numeric',
+            'gender' => 'nullable|string|in:male,female,other',
+            'hired_date' => 'nullable|date',
+            'job_title' => 'nullable|string|max:255',
+            'profile_logo' => 'nullable|images|mimes:jpeg,png,jpg,gif|max:2048',
+        ])->safe()->all();
+
+//        if ($validatedData->fails()) {
+//            return response()->json([
+//                'status' => 'error',
+//                'message' => $validatedData->errors()
+//            ], 400);
+//        }
+        $data = $request->only(['name', 'email', 'password', 'role', 'manager_id', 'birthdate', 'salary', 'gender', 'hired_date', 'job_title']);
+
+
+        // Create a new user with the validated data
+        $user = User::create($data);
+
+
+        // Handle profile logo upload
+
+        if ($request->hasFile('images')) {
+            // Save the file to the storage/app/public/images directory
+
+            $images = $request->file('images');
+            $filename = time() . '.' . $images->getClientOriginalExtension();
+            $path = $images->storeAs('public/images', $filename);
+            $user->profile_logo = $filename;
+        } else {
+            $imagePath = null;
+        }
+
+
+        $user->save();
+        $token = $user->createToken('authToken')->plainTextToken;
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'User registered successfully',
+            'data' => [
+                'user' => $user,
+                'token' => $token
+            ]
+        ], 201);
     }
 
+    /**
+     * Login a user
+     *
+     * @param  Request  $request
+     * @return \Illuminate\Http\Response
+     */
     public function login(Request $request)
     {
-        $fields = $request->validate([
-            'email' => 'required|string',
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|string|email',
             'password' => 'required|string',
-
         ]);
-        //check user
-        $user = User::where('email', $fields['email'])->first();
-        //check password
-        if (!$user || !Hash::check($fields['password'], $user->password)) {
-            return response([
-                'message' => 'not login'
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $validator->errors()
+            ], 422);
+        }
+
+        $credentials = $request->only(['email', 'password']);
+
+        if (!Auth::attempt($credentials)) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Invalid credentials'
             ], 401);
         }
 
-        $token = $user->createToken('mytoken')->plainTextToken;
-        $response = [
-            'user' => $user,
-            'token' => $token
-        ];
-        return response($response, 201);
+        $user = $request->user();
+
+        $token = $user->createToken('authToken')->plainTextToken;
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Login successful',
+            'data' => [
+                'user' => $user,
+                'token' => $token
+            ]
+        ], 200);
     }
 
-
+    /**
+     * Logout a user (Revoke the token)
+     *
+     * @param  Request  $request
+     * @return \Illuminate\Http\Response
+     */
     public function logout(Request $request)
     {
-        if (auth()->user){
-            auth()->user()->tokens()->delete();
-            return [
-                'message' => 'logged out'
-            ];
+        $request->user()->token()->revoke();
 
-        }
-
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Logout successful'
+        ], 200);
     }
+
+
+
 }

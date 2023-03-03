@@ -2,12 +2,20 @@
 
 namespace App\Console;
 
+use App\Console\Commands\ExportDatabase;
+use App\Console\Commands\ExportEmployees;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
 
 class Kernel extends ConsoleKernel
 {
+    protected $commands = [
+        ExportEmployees::class,
+        ExportDatabase::class,
+
+    ];
     /**
+     *
      * Define the application's command schedule.
      *
      * @param  \Illuminate\Console\Scheduling\Schedule  $schedule
