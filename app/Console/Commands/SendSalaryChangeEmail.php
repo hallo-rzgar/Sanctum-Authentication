@@ -10,11 +10,10 @@ class SendSalaryChangeEmail extends Command
 {
     protected $signature = 'salary:change {employee_id} {new_salary}';
 
-    protected $description = 'Send an email to an employee when their salary is changed.';
 
     public function handle()
     {
-        $employee = User::findOrFail($this->argument('id'));
+        $employee = User::findOrFail($this->argument('employee_id'));
 
         $data = [
             'name' => $employee->name,

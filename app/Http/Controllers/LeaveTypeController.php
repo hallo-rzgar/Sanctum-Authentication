@@ -6,7 +6,7 @@ use App\Models\LeaveType;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
-class leaveTypes extends Controller
+class LeaveTypeController extends Controller
 {
     // Display a listing of the leave types
     public function index()
@@ -33,28 +33,13 @@ class leaveTypes extends Controller
     }
 
 
-    // Update the specified leave type in storage
-    public function update(Request $request, LeaveType $leaveType)
-    {
-        dd($leaveType->id);
-        $validator = Validator::make($request->all(), [
-            'name' => 'required',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['success' => false, 'error' => $validator->errors()], 400);
-        }
-
-        $leaveType->update($validator->validated());
-
-        return response()->json(['success' => true, 'data' => $leaveType], 200);
-    }
 
     // Remove the specified leave type from storage
-    public function destroy($id)
+    public function destroy(Request $request)
     {
 
-        $leaveType = LeaveType::findOrFail($id);
+
+        $leaveType = LeaveType::findOrFail($request->id);
         $leaveType->delete();
         return response()->json(['success' => true], 204);
     }

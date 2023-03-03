@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
@@ -12,8 +13,10 @@ use Illuminate\Support\Facades\Validator;
 class UserController extends Controller
 {
 
-    public function updateSalary(Request $request, $id)
+    public function updateSalary(Request $request)
     {
+        $id=$request->id;
+
         $employee = User::findOrFail($id);
         $employee->salary = $request->salary;
         $employee->save();
@@ -36,18 +39,17 @@ class UserController extends Controller
      * @param Request $request
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request,$id)
+    public function update(Request $request)
     {
-
-
+        $id=$request->id;
         // Only authenticated users with the role of "admin" or "manager" can update user data
-        $this->authorize('update', User::class);
+//        $this->authorize('update', User::class);
 
         // Find the user to update by ID
-        $user = User::findOrFail($id);
+        $user = User::find($id);
 
         //  Validate the request data
-        $validatedData = $request->validate([
+        $validatedData = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email,' . $id,
             'password' => 'sometimes|nullable|string|min:8',
@@ -62,16 +64,24 @@ class UserController extends Controller
         ]);
 
         // Update the user with the validated data
-        $user->name = $validatedData['name'];
-        $user->email = $validatedData['email'];
-        $user->role = $validatedData['role'];
-        $user->manager_id = $validatedData['manager_id'];
-        $user->birthdate = $validatedData['birthdate'];
-        $user->salary = $validatedData['salary'];
-        $user->gender = $validatedData['gender'];
-        $user->hired_date = $validatedData['hired_date'];
-        $user->job_title = $validatedData['job_title'];
-
+        $user = new User([
+            'name' => $request->name,
+            'email' => $request->email,
+            'role' => $request->role,
+            'birthdate' => $request->birthdate,
+            'salary' => $request->salary,
+            'gender' => $request->gender,
+            'hired_date' => $request->hired_date,
+            'job_title' => $request->job_title,
+            'manager_id' => auth()->user()->id,
+            'password' => bcrypt($request->password),
+        ]);
+        if ($validatedData->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $validatedData->errors()
+            ], 400);
+        }
         if (isset($validatedData['password'])) {
             $user->password = Hash::make($validatedData['password']);
         }
@@ -113,10 +123,11 @@ class UserController extends Controller
      * @return \Illuminate\Http\Response
      */
 
-    public function destroy(User $user)
-    {
-        $this->authorize('delete', $user);
 
+    public function destroy(Request $request)
+    {
+       $user = User::find($request->id);
+//      $this->authorize('delete', $user);
         $user->delete();
 
         return response()->json([

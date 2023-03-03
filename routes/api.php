@@ -1,7 +1,8 @@
 <?php
 
 use App\Http\Controllers\AuthController;
-use App\Http\Controllers\leaveTypes;
+use App\Http\Controllers\LeaveRequestController;
+use App\Http\Controllers\LeaveTypeController;
 use App\Http\Controllers\UserController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -20,20 +21,31 @@ use Illuminate\Support\Facades\Route;
 
 //Protected routes
 Route::group(['middleware' => ['auth:sanctum']], function () {
-    Route::post('/store', [UserController::class, 'store']);
-    Route::get('/search', [UserController::class, 'search']);
-    Route::post('/update/{id}', [AuthController::class, 'update']);
+    //Auth
+    Route::post('/update', [UserController::class, 'update']);
     Route::post('/register', [AuthController::class, 'register']);
     Route::post('/logout', [AuthController::class, 'logout']);
+
+    //user
+    Route::post('/store', [UserController::class, 'store']);
+    Route::get('/search', [UserController::class, 'search']);
+       Route::post('user_delete', [UserController::class, 'destroy'])->name('user_delete');
+       Route::post('user_salary', [UserController::class, 'updateSalary'])->name('user_salary');
+
+
+
+    //leaverequest
     Route::get('/request', [LeaveRequestController::class, 'index']);
     Route::post('/requests', [LeaveRequestController::class, 'store']);
-    Route::put('/request/{id}', [LeaveRequestController::class, 'update']);
-//    Route::get('/leave_types', [leaveTypes::class, 'index']);
-//    Route::post('/leave_types', [leaveTypes::class, 'store']);
-//    Route::put('/leave_type/{id}', [leaveTypes::class, 'update']);
-    // Route::delete('/leave-types/{id}', [leaveTypes::class, 'destroy']);
-//       Route::apiResource('leave-types', '\App\Http\Controllers\leaveTypes');
-    Route::put('/users/{id}/salary',  [UserController::class, 'updateSalary'])->name('users.update_salary');;
+    Route::post('/request/update', [LeaveRequestController::class, 'update']);
+
+    //leavetype
+    Route::get('/leave_types', [LeaveTypeController::class, 'index']);
+    Route::post('/leave_types', [LeaveTypeController::class, 'store']);
+    Route::delete('/leave_types', [LeaveTypeController::class, 'destroy']);
+
+
+
 
 
 

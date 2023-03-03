@@ -38,21 +38,27 @@ class AuthController extends Controller
             'hired_date' => 'nullable|date',
             'job_title' => 'nullable|string|max:255',
             'profile_logo' => 'nullable|images|mimes:jpeg,png,jpg,gif|max:2048',
-        ])->safe()->all();
+        ]);
 
-//        if ($validatedData->fails()) {
-//            return response()->json([
-//                'status' => 'error',
-//                'message' => $validatedData->errors()
-//            ], 400);
-//        }
-        $data = $request->only(['name', 'email', 'password', 'role', 'manager_id', 'birthdate', 'salary', 'gender', 'hired_date', 'job_title']);
+        if ($validatedData->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $validatedData->errors()
+            ], 400);
+        }
 
-
-        // Create a new user with the validated data
-        $user = User::create($data);
-
-
+        $user = new User([
+            'name' => $request->name,
+            'email' => $request->email,
+            'role' => $request->role,
+            'birthdate' => $request->birthdate,
+            'salary' => $request->salary,
+            'gender' => $request->gender,
+            'hired_date' => $request->hired_date,
+            'job_title' => $request->job_title,
+            'manager_id' => auth()->user()->id,
+            'password' => bcrypt($request->password),
+        ]);
         // Handle profile logo upload
 
         if ($request->hasFile('images')) {
@@ -131,8 +137,7 @@ class AuthController extends Controller
      */
     public function logout(Request $request)
     {
-        $request->user()->token()->revoke();
-
+        Auth()->user()->tokens()->delete();
         return response()->json([
             'status' => 'success',
             'message' => 'Logout successful'
