@@ -37,7 +37,7 @@ class   UsersTableSeeder extends Seeder
             'name' => 'sick',
         ]);
 
-        for ($i = 0; $i < 3; $i++) {
+        for ($i = 0; $i < 3000; $i++) {
             DB::table('users')->insert([
                 'name' => $faker->name,
                 'email' => $faker->email,
